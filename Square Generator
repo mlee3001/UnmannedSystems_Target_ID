@@ -1,0 +1,42 @@
+import matplotlib.pylab as plt
+import numpy as np
+import random
+from matplotlib.pyplot import figure
+
+figure(figsize=(1, 1))
+
+# base generation
+x = np.array([-1.0, 1.0, 1.0, -1.0, -1.0])
+y = np.array([-1.0, -1.0, 1.0, 1.0, -1.0])
+colors = ["red", "blue", "green", "purple", "black", "brown", "orange"]
+randcolor = random.sample(colors, 1)
+
+# sizetransform
+sizemod = random.randint(10, 50)
+sizemod /= 10
+x *= sizemod
+y *= sizemod
+
+# translation transform
+xmod = random.randint(-5, 5)
+ymod = random.randint(-5, 5)
+
+xlation = np.array([1,1,1,1,1])
+ylation = np.array([1,1,1,1,1])
+
+x +=xmod*xlation
+y +=ymod*ylation
+
+# rotate transform
+#Add Later
+
+
+# plot
+
+plt.axis([-10,10,-10,10])
+plt.axis("off")
+plt.fill(x, y, randcolor[0])
+
+plt.savefig("test.png")
+plt.show()
+
