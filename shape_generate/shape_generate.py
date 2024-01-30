@@ -9,14 +9,21 @@ label_pos_precision = 2
 to_blend_background = True
 image_blur = True
 image_blur_size = 5
-shape_max_size = 80
-shape_min_size = 60
+shape_max_size = 40
+shape_min_size = 20
 frame_width = 640
 frame_height = 640
 channels = 4
-repeat_count = 1
-shape_output_path = "generate/"
-label_output_path = "label/"
+repeat_count = 15 #64x generation
+training_set = True #Change for validation set
+
+if training_set == True:
+    shape_output_path = "shape_dataset/images/train/"
+    label_output_path = "shape_dataset/labels/train/"   
+else:
+    shape_output_path = "shape_dataset/images/val/"
+    label_output_path = "shape_dataset/labels/val/"   
+
 background_file_path = [
     "background/1.jpg",
     "background/2.jpg",
@@ -29,7 +36,7 @@ common_rgb = {
     "brown" : (0, 75, 150, 255),    "black" : (0, 0, 0, 255),
 }
 shape_id = {
-    "circle" : 0, "semi_circle" : 1, "quater_circle" : 2, "triangle" : 3, 
+    "circle" : 0, "semi_circle" : 1, "quarter_circle" : 2, "triangle" : 3, 
     "rectangle" : 4, "pentagon" : 5, "cross" : 6, "star" : 7
 }
 # --------------------------------------------Settings------------------------------------------- #
@@ -64,7 +71,7 @@ def generate_semi_circle(frame, frame_width, frame_height, min_radius, max_radiu
 
     return frame, label_x, label_y, label_w, label_h
 
-def generate_quater_circle(frame, frame_width, frame_height, min_radius, max_radius, color):
+def generate_quarter_circle(frame, frame_width, frame_height, min_radius, max_radius, color):
     radius = random.randint(min_radius, max_radius)
     O_x = random.randint(radius, frame_width - radius)
     O_y = random.randint(radius, frame_height - radius)
@@ -269,17 +276,17 @@ def main():
             label.write(f"{shape_id['semi_circle']} {cx} {cy} {w} {h}")
             label.close()
 
-            # Quater Circle
+            # Quarter Circle
             frame = np.zeros((frame_width, frame_height, channels), np.uint8)
-            frame, cx, cy, w, h = generate_quater_circle(
+            frame, cx, cy, w, h = generate_quarter_circle(
                 frame, frame_width, frame_height, shape_min_size, shape_max_size, color
             )  
             bg_n = random.randint(0, len(backgrounds) - 1)
             frame = blend_background(backgrounds[bg_n], frame)
             
-            cv.imwrite(f"{shape_output_path}quater_circle_{color_name}_{i}.png", frame)
-            label = open(f"{label_output_path}quater_circle_{color_name}_{i}.txt", "w", encoding="utf-8")
-            label.write(f"{shape_id['quater_circle']} {cx} {cy} {w} {h}")
+            cv.imwrite(f"{shape_output_path}quarter_circle_{color_name}_{i}.png", frame)
+            label = open(f"{label_output_path}quarter_circle_{color_name}_{i}.txt", "w", encoding="utf-8")
+            label.write(f"{shape_id['quarter_circle']} {cx} {cy} {w} {h}")
             label.close()
 
             # Triangle
