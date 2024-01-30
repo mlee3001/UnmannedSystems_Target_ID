@@ -1,5 +1,6 @@
 #training command
 yolo train data=dataset.yaml model=yolov8n.pt epochs=10 lr0=0.01
+#best results seen at 83 epochs
 
 #blob file generation
 http://tools.luxonis.com/
