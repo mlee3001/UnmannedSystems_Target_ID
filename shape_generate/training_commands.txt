@@ -1,6 +1,19 @@
 #training command
-yolo train data=dataset.yaml model=yolov8n.pt epochs=10 lr0=0.01
-#best results seen at 83 epochs
+make sure that you are in the shape_generate directory
+yolo train data=dataset.yaml model=yolov8n.pt epochs=100 lr0=0.001
+
+#validation command
+yolo val model=runs/detect/train#/weights/best.pt data=dataset.yaml
+
+best results seen at 83 epochs
+133 epochs completed in 8.258 hours
+
+#target notes
+Camera Image Size = 4056 x 3040
+Camera HFOV = 69 degrees
+Camera VFOV = 55 degrees
+Target Size @75 ft = 36px x 28px MAX
+On Training Size of 640x640: 5px x 5px
 
 #blob file generation
 http://tools.luxonis.com/
