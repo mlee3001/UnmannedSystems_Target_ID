@@ -4,9 +4,9 @@ import depthai
 import numpy as np
 from depthai_sdk.fps import FPSHandler
 
-RESULT_PATH = "result_hand_number" # Relative to curent working dir
-BLOB_NAME = "custom_model" # Without file extension
-JSON_NAME = "custom_model" # Without file extension
+RESULT_PATH = "result_shapes_m" # Relative to curent working dir
+BLOB_NAME = "best_openvino_2022.1_6shave" # Without .blob file extension
+JSON_NAME = "best" # Without .json file extension
 
 def get_model_param():
     blob_path = RESULT_PATH + "/" + BLOB_NAME + ".blob"
@@ -32,12 +32,6 @@ def get_model_param():
     return blob_path, iou_threshold, confidence_threshold, class_map,\
            num_classes, coordinates, anchors, anchor_masks, width, height
 
-def get_frame_Norm(frame, bbox):
-    normVals = np.full(len(bbox), frame.shape[0])
-    normVals[::2] = frame.shape[1]
-
-    return (np.clip(np.array(bbox), 0, 1) * normVals).astype(int)
-
 def start_camera(pipeline, class_map, fps):
     with depthai.Device(pipeline) as device:
         q_rgb = device.getOutputQueue("camera")
@@ -47,6 +41,12 @@ def start_camera(pipeline, class_map, fps):
         
         print("Activated detection loop.")
         print("Press 'q' to quit.")
+
+        def get_frame_Norm(frame, bbox):
+            normVals = np.full(len(bbox), frame.shape[0])
+            normVals[::2] = frame.shape[1]
+
+            return (np.clip(np.array(bbox), 0, 1) * normVals).astype(int)
         
         while True:
             in_rgb = q_rgb.tryGet()
