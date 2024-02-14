@@ -9,50 +9,90 @@ label_pos_precision = 2
 to_blend_background = True
 image_blur = True
 image_blur_size = 5
-shape_max_size = 6
-shape_min_size = 4
+shape_max_size = 50
+shape_min_size = 40
 frame_width = 640
 frame_height = 640
 channels = 4
-repeat_count = 15 #64x generation
-training_set = True #Change for validation set
+font_scale = 1
+font_thickness = 4
+repeat_count = 1 # Change this
+training_set = True # Change this
 
-if training_set == True:
-    shape_output_path = "shape_dataset/images/train/"
-    label_output_path = "shape_dataset/labels/train/"   
+if training_set:
+    shape_output_path = "shape_dataset/images/train/" # Change this
+    label_output_path = "shape_dataset/labels/train/"
 else:
-    shape_output_path = "shape_dataset/images/val/"
-    label_output_path = "shape_dataset/labels/val/"   
+    shape_output_path = "shape_dataset/images/val/" # Change this
+    label_output_path = "shape_dataset/labels/val/"
 
 background_file_path = [
-    "background/1.jpg",
-    "background/2.jpg",
-    "background/3.jpg",
-    "background/4.jpg",
+    "shape_dataset/background/1.jpg", # Change this
+    "shape_dataset/background/2.jpg",
+    "shape_dataset/background/3.jpg",
+    "shape_dataset/background/4.jpg",
 ]
 common_rgb = {
     "blue" : (255, 0, 0, 255),      "green" : (0, 255, 0, 255),    "red" : (0, 0, 255, 255), 
     "white" : (255, 255, 255, 255), "orange" : (0, 165, 255, 255), "purple" : (204, 0, 204, 255),
     "brown" : (0, 75, 150, 255),    "black" : (0, 0, 0, 255),
 }
+alpha_numeric = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "k", "L", "M",
+                 "N","O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 shape_id = {
     "circle" : 0, "semi_circle" : 1, "quarter_circle" : 2, "triangle" : 3, 
     "rectangle" : 4, "pentagon" : 5, "cross" : 6, "star" : 7
 }
 # --------------------------------------------Settings------------------------------------------- #
 
+def get_random_text():
+    index = random.randint(0, len(alpha_numeric) - 1)
+    return alpha_numeric[index]
+
+def get_random_color_other_than(other_than):
+    while True:
+        colors = list(common_rgb.values())
+        index = random.randint(0, len(colors) - 1)
+        if colors[index] == other_than:
+            continue
+        else:
+            break
+
+    return colors[index]
+
+def add_rotated_text(frame, center_x, center_y, rotation, text, font_scale, font_thickness, color):
+    text_width = cv.getTextSize(text, cv.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)[0][0]
+    text_height = cv.getTextSize(text, cv.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)[0][1]
+    text_x = int(center_x - text_width/2) + int(font_thickness/2)
+    text_y = int(center_y + text_height/2)
+
+    rotation_matrix = cv.getRotationMatrix2D((center_x, center_y), rotation, 1)
+    text_frame = np.zeros((frame_width, frame_height, channels), np.uint8)
+
+    cv.putText(text_frame, text, (text_x, text_y), cv.FONT_HERSHEY_SIMPLEX, font_scale, color, font_thickness)
+    
+    rotated_text_frame = cv.warpAffine(text_frame, rotation_matrix, (frame.shape[1], frame.shape[0]))
+    frame = cv.add(rotated_text_frame, frame)
+
+    return frame
 
 def generate_circle(frame, frame_width, frame_height, min_radius, max_radius, color):
     radius = random.randint(min_radius, max_radius)
     O_x = random.randint(radius, frame_width - radius)
     O_y = random.randint(radius, frame_height - radius)
+    rotation = random.randint(0, 360)
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(radius/frame_width, label_pos_precision)
-    label_h = round(radius/frame_height, label_pos_precision)
+    label_w = round(radius/frame_width, label_pos_precision)*2
+    label_h = round(radius/frame_height, label_pos_precision)*2
 
     cv.circle(frame, (O_x, O_y), radius, color, -1)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
@@ -64,10 +104,16 @@ def generate_semi_circle(frame, frame_width, frame_height, min_radius, max_radiu
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(radius/frame_width, label_pos_precision)
-    label_h = round(radius/frame_height, label_pos_precision)
+    label_w = round(radius/frame_width, label_pos_precision)*2
+    label_h = round(radius/frame_height, label_pos_precision)*2
 
     cv.ellipse(frame, (O_x, O_y), (radius, radius), rotation, 0, 180, color, -1)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    O_y += int(radius/2 * math.cos(math.radians(rotation)))
+    O_x -= int(radius/2 * math.sin(math.radians(rotation)))
+    frame = add_rotated_text(frame, O_x, O_y, rotation, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
@@ -79,10 +125,16 @@ def generate_quarter_circle(frame, frame_width, frame_height, min_radius, max_ra
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(radius/frame_width, label_pos_precision)
-    label_h = round(radius/frame_height, label_pos_precision)
+    label_w = round(radius/frame_width, label_pos_precision)*2
+    label_h = round(radius/frame_height, label_pos_precision)*2
 
     cv.ellipse(frame, (O_x, O_y), (radius, radius), rotation, 0, 90, color, -1)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    O_y += int(radius/2 * math.cos(math.radians(rotation) - math.radians(45)))
+    O_x -= int(radius/2 * math.sin(math.radians(rotation) - math.radians(45)))
+    frame = add_rotated_text(frame, O_x, O_y, rotation, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
@@ -94,8 +146,8 @@ def generate_triagnle(frame, frame_width, frame_height, min_length, max_length, 
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(length/frame_width, label_pos_precision)
-    label_h = round(length/frame_height, label_pos_precision)
+    label_w = round(length/frame_width, label_pos_precision)*2
+    label_h = round(length/frame_height, label_pos_precision)*2
 
     pts = []
     for i in range(3):
@@ -105,8 +157,11 @@ def generate_triagnle(frame, frame_width, frame_height, min_length, max_length, 
 
     pts = np.array(pts, np.int32)
     pts = pts.reshape((-1,1,2))
-
     cv.fillPoly(frame, [pts], color)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation*57.3, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
@@ -121,8 +176,8 @@ def generate_rectangle(frame, frame_width, frame_height, min_length, max_length,
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(length/frame_width, label_pos_precision)
-    label_h = round(length/frame_height, label_pos_precision)
+    label_w = round(length/frame_width, label_pos_precision)*2
+    label_h = round(length/frame_height, label_pos_precision)*2
 
     p1 = (-width//2, -height//2)
     p2 = ( width//2, -height//2)
@@ -139,8 +194,11 @@ def generate_rectangle(frame, frame_width, frame_height, min_length, max_length,
     
     pts = np.array([p1, p2, p3, p4], np.int32)
     pts = pts.reshape((-1,1,2))
-
     cv.fillPoly(frame, [pts], color)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation*57.3, text, font_scale, font_thickness, text_color)
     
     return frame, label_x, label_y, label_w, label_h
 
@@ -152,8 +210,8 @@ def generate_pentagon(frame, frame_width, frame_height, min_length, max_length, 
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(length/frame_width, label_pos_precision)
-    label_h = round(length/frame_height, label_pos_precision)
+    label_w = round(length/frame_width, label_pos_precision)*2
+    label_h = round(length/frame_height, label_pos_precision)*2
 
     pts = []
     for i in range(5):
@@ -163,8 +221,11 @@ def generate_pentagon(frame, frame_width, frame_height, min_length, max_length, 
 
     pts = np.array(pts, np.int32)
     pts = pts.reshape((-1,1,2))
-
     cv.fillPoly(frame, [pts], color)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation*57.3, text, font_scale, font_thickness, text_color)
     
     return frame, label_x, label_y, label_w, label_h
 
@@ -176,16 +237,20 @@ def generate_cross(frame, frame_width, frame_height, min_length, max_length, col
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(length/frame_width, label_pos_precision)
-    label_h = round(length/frame_height, label_pos_precision)
+    label_w = round(length/frame_width, label_pos_precision)*2
+    label_h = round(length/frame_height, label_pos_precision)*2
 
     p1 = (int(O_x - length / math.sqrt(2)), int(O_y - length / math.sqrt(2) + rotation))
     p2 = (int(O_x + length / math.sqrt(2)), int(O_y + length / math.sqrt(2) - rotation))
     p3 = (int(O_x + length / math.sqrt(2) - rotation), int(O_y - length / math.sqrt(2)))
     p4 = (int(O_x - length / math.sqrt(2) + rotation), int(O_y + length / math.sqrt(2)))
 
-    cv.line(frame, p1, p2, color, thickness = int(length * 0.3))
-    cv.line(frame, p3, p4, color, thickness = int(length * 0.3))
+    cv.line(frame, p1, p2, color, thickness = int(length * 0.8))
+    cv.line(frame, p3, p4, color, thickness = int(length * 0.8))
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation*57.3, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
@@ -198,8 +263,8 @@ def generate_star(frame, frame_width, frame_height, min_length, max_length, colo
 
     label_x = round(O_x/frame_width, label_pos_precision)
     label_y = round(O_y/frame_height, label_pos_precision)
-    label_w = round(length/frame_width, label_pos_precision)
-    label_h = round(length/frame_height, label_pos_precision)
+    label_w = round(length/frame_width, label_pos_precision)*2
+    label_h = round(length/frame_height, label_pos_precision)*2
 
     pts = []
     for i in range(5):
@@ -215,8 +280,11 @@ def generate_star(frame, frame_width, frame_height, min_length, max_length, colo
 
     pts = np.array(pts, np.int32)
     pts = pts.reshape((-1,1,2))
-
     cv.fillPoly(frame, [pts], color)
+
+    text = get_random_text()
+    text_color = get_random_color_other_than(color)
+    frame = add_rotated_text(frame, O_x, O_y, rotation*57.3, text, font_scale, font_thickness, text_color)
 
     return frame, label_x, label_y, label_w, label_h
 
