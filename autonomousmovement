@@ -1,0 +1,40 @@
+#adapted from https://dronekit-python.readthedocs.io/en/latest/guide/copter/guided_mode.html#guided-mode-how-to-send-commands
+# NED IS local tangent frame (x: North, y: East, z: Down) with origin fixed relative to earth. https://mavlink.io/en/messages/common.html
+# velocity_x > 0 => fly North
+# velocity_x < 0 => fly South
+# velocity_y > 0 => fly East
+# velocity_y < 0 => fly West
+# velocity_z < 0 => ascend
+# velocity_z > 0 => descend
+
+from pymavlink import mavutil
+from dronekit import connect, VehicleMode, LocationGlobalRelative
+import time
+
+def move(velocity_x, velocity_y, velocity_z, duration=0):
+    msg = vehicle.message_factory.set_position_target_local_ned_encode(
+        0,       # time_boot_ms (not used)
+        0, 0,    # target system, target component
+        mavutil.mavlink.MAV_FRAME_BODY_NED, # velocity and acceleration relative to vehicle heading
+        0b0000111111000111, # type_mask (only speeds enabled)
+        0, 0, 0, # x, y, z positions (not used)
+        velocity_x, velocity_y, velocity_z, # x, y, z velocity in m/s
+        0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+        0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+
+    for x in range(0,duration):
+        vehicle.send_mavlink(msg)
+        time.sleep(1)
+
+def move_left():
+  move(0,-1,0,1)
+
+def move_right():
+  move(0,1,0,1)
+
+def move_north():
+  move(1,0,0,1)
+
+def move_south():
+  move(-1,0,0,1)
+
