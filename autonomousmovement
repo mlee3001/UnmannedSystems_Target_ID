@@ -38,3 +38,5 @@ def move_north():
 def move_south():
   move(-1,0,0,1)
 
+vehicle = connect("/dev/ttyAMA0", wait_ready=True, baud=57600)
+
